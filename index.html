@@ -799,7 +799,7 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
    CONFIG
    ✅ GitHub Pages 배포용 — JSONP 방식으로 GAS 호출
 ═══════════════════════════════════════════════ */
-const GAS_URL     = 'https://script.google.com/macros/s/AKfycbzHcDExSDhGk19kZ30Wxg5Ir4ZeafVfSOBZuXlj1K2XMiM4Md4RrHT3DX55Y_eAij2z/exec';
+const GAS_URL     = 'https://script.google.com/macros/s/AKfycbzGFkegiqWgRYUZEWzbHi5NHzAMMqWl-8bimKnhmUhfjV1q3L2NvhZJxR0n4zUMYimE/exec';
 const CORRECT_PW  = '5600';   // 로그인 화면에서 입력받은 값과 비교
 
 const STAGE_TOTAL = { '1단계':11, '2단계':9, '3단계':6, '4단계':3, '5단계':3 };
@@ -904,18 +904,6 @@ async function syncData() {
   try {
     const json = await loadViaJsonp(SESSION_PW);
     if (json.error) {
-      // 비밀번호 오류이면 로그인 화면으로
-      if (json.error.includes('비밀번호')) {
-        SESSION_PW = '';
-        sessionStorage.removeItem('dash_pw');
-        hideLoading();
-        setSyncStatus('err', '비밀번호 오류');
-        document.getElementById('login-screen').style.display = 'flex';
-        const errEl = document.getElementById('pw-error');
-        errEl.textContent = 'GAS 비밀번호가 올바르지 않습니다.';
-        errEl.style.display = 'block';
-        return;
-      }
       throw new Error(json.error);
     }
     DATA = (json.rows || []).filter(r => r.name && !r.name.includes('TEST'));
