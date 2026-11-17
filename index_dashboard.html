@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v2.1 (2026-11-17)">
+<meta name="app-version" content="v2.2 (2026-11-17)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발·수지주일반 사역평가표 대시보드</title>
@@ -491,7 +491,7 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 <div id="p-rating" class="pane">
   <!-- 단계 필터 -->
   <div class="sf-bar" id="rating-sf-bar">
-    <button class="sf-btn on" data-s="all" onclick="filterRating('all',this)">전체 종합</button>
+    <button class="sf-btn on" data-s="all" onclick="filterRating('all',this)">전체</button>
     <button class="sf-btn" data-s="1"   onclick="filterRating('1',this)">1단계</button>
     <button class="sf-btn" data-s="2"   onclick="filterRating('2',this)">2단계</button>
     <button class="sf-btn" data-s="3"   onclick="filterRating('3',this)">3단계</button>
@@ -526,7 +526,7 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 <div id="p-field" class="pane">
   <!-- 단계 필터 -->
   <div class="sf-bar" id="field-sf-bar">
-    <button class="sf-btn on" data-s="all" onclick="filterField('all',this)">전체 종합</button>
+    <button class="sf-btn on" data-s="all" onclick="filterField('all',this)">전체</button>
     <button class="sf-btn" data-s="1"   onclick="filterField('1',this)">1단계</button>
     <button class="sf-btn" data-s="2"   onclick="filterField('2',this)">2단계</button>
     <button class="sf-btn" data-s="3"   onclick="filterField('3',this)">3단계</button>
@@ -600,7 +600,7 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
     </div>
     <div class="ivh-right">
       <div class="issue-filter-tabs" id="issue-filter-tabs">
-        <button class="ift on"  onclick="filterIssue('all',this)">전체 종합</button>
+        <button class="ift on"  onclick="filterIssue('all',this)">전체</button>
         <button class="ift"     onclick="filterIssue('1',this)">1단계</button>
         <button class="ift"     onclick="filterIssue('2',this)">2단계</button>
         <button class="ift"     onclick="filterIssue('3',this)">3단계</button>
@@ -1408,7 +1408,7 @@ function renderRating() {
   // stage 버튼 라벨에 응답수 표시
   document.querySelectorAll('#rating-sf-bar .sf-btn').forEach(btn => {
     const s = btn.getAttribute('data-s');
-    if (s === 'all') { btn.textContent = `전체 종합 (${DATA.length}명)`; return; }
+    if (s === 'all') { btn.textContent = `전체 (${DATA.length}명)`; return; }
     const cnt = DATA.filter(r => r.stage === s + '단계').length;
     const tot = STAGE_TOTAL[s + '단계'] || 0;
     btn.textContent = `${s}단계 (${cnt}/${tot})`;
@@ -1482,7 +1482,7 @@ function renderField() {
   // 버튼 라벨에 응답수
   document.querySelectorAll('#field-sf-bar .sf-btn').forEach(btn => {
     const s = btn.getAttribute('data-s');
-    if (s === 'all') { btn.textContent = `전체 종합 (${DATA.length}명)`; return; }
+    if (s === 'all') { btn.textContent = `전체 (${DATA.length}명)`; return; }
     const cnt = DATA.filter(r => r.stage === s + '단계').length;
     const tot = STAGE_TOTAL[s + '단계'] || 0;
     btn.textContent = `${s}단계 (${cnt}/${tot})`;
@@ -1580,6 +1580,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.1 (2026-11-17)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.2 (2026-11-17)</div>
 </body>
 </html>
