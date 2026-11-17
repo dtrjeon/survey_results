@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v2.0 (2026-11-17)">
+<meta name="app-version" content="v2.1 (2026-11-17)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발·수지주일반 사역평가표 대시보드</title>
@@ -376,6 +376,20 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 .chart-wrap { position: relative; margin-bottom: 1rem; }
 .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: .88rem; }
 @media(max-width:520px) { .two { grid-template-columns: 1fr; } .hdr { padding: 20px 16px 18px; } }
+
+/* ─── 단계 선택 버튼 그룹 (연결형) ─── */
+.sf-bar,.stabs,.issue-filter-tabs{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:1px; width:100%;
+  background:var(--border); border:1.5px solid var(--border); border-radius:12px; overflow:hidden;
+}
+.stabs{ grid-template-columns:repeat(5,1fr); }
+.sf-bar .sf-btn,.stabs .stab,.issue-filter-tabs .ift{
+  border:0 !important; border-radius:0 !important; margin:0; padding:10px 2px;
+  font-size:.74rem; line-height:1.25; text-align:center; white-space:nowrap;
+}
+@media (min-width:640px){
+  .sf-bar,.issue-filter-tabs{ grid-template-columns:repeat(6,1fr); }
+}
 </style>
 </head>
 <body>
@@ -1566,6 +1580,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.0 (2026-11-17)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.1 (2026-11-17)</div>
 </body>
 </html>
