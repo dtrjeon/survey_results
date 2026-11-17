@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v2.2 (2026-11-17)">
+<meta name="app-version" content="v2.3 (2026-11-17)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발·수지주일반 사역평가표 대시보드</title>
@@ -382,13 +382,12 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
   display:grid; grid-template-columns:repeat(3,1fr); gap:1px; width:100%;
   background:var(--border); border:1.5px solid var(--border); border-radius:12px; overflow:hidden;
 }
-.stabs{ grid-template-columns:repeat(5,1fr); }
 .sf-bar .sf-btn,.stabs .stab,.issue-filter-tabs .ift{
   border:0 !important; border-radius:0 !important; margin:0; padding:10px 2px;
   font-size:.74rem; line-height:1.25; text-align:center; white-space:nowrap;
 }
 @media (min-width:640px){
-  .sf-bar,.issue-filter-tabs{ grid-template-columns:repeat(6,1fr); }
+  .sf-bar,.stabs,.issue-filter-tabs{ grid-template-columns:repeat(6,1fr); }
 }
 </style>
 </head>
@@ -1294,13 +1293,14 @@ function renderStage() {
   stabs.innerHTML = '';
   panels.innerHTML = '';
 
-  STAGE_COLS.forEach((stage,si) => {
-    const rows = DATA.filter(r=>r.stage===stage);
-    const tot  = STAGE_TOTAL[stage];
+  ['전체',...STAGE_COLS].forEach((stage,si) => {
+    const isAll = si===0;
+    const rows = isAll ? DATA : DATA.filter(r=>r.stage===stage);
+    const tot  = isAll ? STAGE_COLS.reduce((a,c)=>a+(STAGE_TOTAL[c]||0),0) : STAGE_TOTAL[stage];
     const pct  = tot ? (rows.length/tot*100) : 0;
     const btn  = document.createElement('button');
     btn.className = 'stab' + (si===0?' on':'');
-    btn.textContent = `${stage} (${rows.length}/${tot})`;
+    btn.textContent = isAll ? `전체 (${rows.length}명)` : `${stage} (${rows.length}/${tot})`;
     btn.onclick = function(){ document.querySelectorAll('.stab').forEach(b=>b.classList.remove('on')); document.querySelectorAll('.sp').forEach(p=>p.classList.remove('on')); this.classList.add('on'); document.getElementById('sp-'+si).classList.add('on'); };
     stabs.appendChild(btn);
 
@@ -1309,8 +1309,8 @@ function renderStage() {
     const allQs = [...CLASS_QS,...TRAIN_QS,...TRAINER_QS];
     const barHtml = allQs.map(q => {
       const a = avg(rows.map(r=>r[q.k]));
-      const ci = si < STAGE_CLR.length ? si : STAGE_CLR.length-1;
-      return a!==null ? scoreBar(q.l, a, STAGE_CLR[ci]) : '';
+      const ci = Math.min(si-1, STAGE_CLR.length-1);
+      return a!==null ? scoreBar(q.l, a, isAll ? '#1B2E4B' : STAGE_CLR[ci]) : '';
     }).join('');
 
     // quotes — 제안사항은 의견자 이름·단계 태그 포함
@@ -1345,7 +1345,7 @@ function renderStage() {
     div.className = 'sp' + (si===0?' on':'');
     div.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        ${badge(stage)}
+        ${isAll ? '<span class="b" style="background:#1B2E4B;color:#fff">전체</span>' : badge(stage)}
         <span style="font-size:.75rem;color:var(--muted)">${tot}명 중 ${rows.length}명 응답</span>
         ${pill(pct)}
       </div>
@@ -1580,6 +1580,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.2 (2026-11-17)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.3 (2026-11-17)</div>
 </body>
 </html>
