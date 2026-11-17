@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v2.4 (2026-11-17)">
+<meta name="app-version" content="v2.5 (2026-11-17)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발·수지주일반 사역평가표 대시보드</title>
@@ -547,6 +547,15 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 
 <!-- ══════════════════════════ 주관식 ══════════════════════════ -->
 <div id="p-qual" class="pane">
+  <!-- 단계 필터 -->
+  <div class="sf-bar" id="qual-sf-bar">
+    <button class="sf-btn on" data-s="all" onclick="filterQual('all',this)">전체</button>
+    <button class="sf-btn" data-s="1"   onclick="filterQual('1',this)">1단계</button>
+    <button class="sf-btn" data-s="2"   onclick="filterQual('2',this)">2단계</button>
+    <button class="sf-btn" data-s="3"   onclick="filterQual('3',this)">3단계</button>
+    <button class="sf-btn" data-s="4"   onclick="filterQual('4',this)">4단계</button>
+    <button class="sf-btn" data-s="5"   onclick="filterQual('5',this)">5단계</button>
+  </div>
   <div class="sec-ttl">현장 유익한 경험</div>
   <div class="card" id="q-field5a"></div>
   <div class="sec-ttl">어려운 경험 & 하나님의 지혜</div>
@@ -1545,12 +1554,28 @@ function renderField() {
 }
 
 /* ─── 주관식 ─── */
+let currentQualStage = 'all';
+function filterQual(stage, btn) {
+  document.querySelectorAll('#qual-sf-bar .sf-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  currentQualStage = stage;
+  renderQual();
+}
 function renderQual() {
-  document.getElementById('q-field5a').innerHTML = quoteList(DATA,['field_5a']);
-  document.getElementById('q-field5b').innerHTML = quoteList(DATA,['field_5b']);
-  document.getElementById('q-thanks').innerHTML  = quoteList(DATA,['thanks_1','thanks_2']);
-  document.getElementById('q-suggest').innerHTML = quoteList(DATA,['suggest_1','suggest_2','suggest_3']);
-  document.getElementById('q-absent').innerHTML  = quoteList(DATA.filter(r=>r.absent_reason),['absent_reason']);
+  const stage = currentQualStage;
+  document.querySelectorAll('#qual-sf-bar .sf-btn').forEach(btn => {
+    const s = btn.getAttribute('data-s');
+    if (s === 'all') { btn.textContent = `전체 (${DATA.length}명)`; return; }
+    const cnt = DATA.filter(r => r.stage === s + '단계').length;
+    const tot = STAGE_TOTAL[s + '단계'] || 0;
+    btn.textContent = `${s}단계 (${cnt}/${tot})`;
+  });
+  const D = stage === 'all' ? DATA : DATA.filter(r => r.stage === stage + '단계' || r.stage === stage);
+  document.getElementById('q-field5a').innerHTML = quoteList(D,['field_5a']);
+  document.getElementById('q-field5b').innerHTML = quoteList(D,['field_5b']);
+  document.getElementById('q-thanks').innerHTML  = quoteList(D,['thanks_1','thanks_2']);
+  document.getElementById('q-suggest').innerHTML = quoteList(D,['suggest_1','suggest_2','suggest_3']);
+  document.getElementById('q-absent').innerHTML  = quoteList(D.filter(r=>r.absent_reason),['absent_reason']);
 }
 
 /* ─── 문제점 탭 동적 수치 ─── */
@@ -1580,6 +1605,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.4 (2026-11-17)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.5 (2026-11-17)</div>
 </body>
 </html>
