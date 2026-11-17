@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v2.3 (2026-11-17)">
+<meta name="app-version" content="v2.4 (2026-11-17)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발·수지주일반 사역평가표 대시보드</title>
@@ -591,21 +591,21 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
     (응답 비율 · 단계별 · 평점 · 현장실습 · 주관식 탭은 선택한 기수의 실시간 데이터입니다.)
   </div>
 
+  <!-- 단계 선택 (헤더 위) -->
+<div class="issue-filter-tabs" style="margin-bottom:1rem" id="issue-filter-tabs">
+  <button class="ift on"  onclick="filterIssue('all',this)">전체</button>
+  <button class="ift"     onclick="filterIssue('1',this)">1단계</button>
+  <button class="ift"     onclick="filterIssue('2',this)">2단계</button>
+  <button class="ift"     onclick="filterIssue('3',this)">3단계</button>
+  <button class="ift"     onclick="filterIssue('4',this)">4단계</button>
+  <button class="ift"     onclick="filterIssue('5',this)">5단계</button>
+</div>
+
   <!-- 뷰 전환 헤더 -->
   <div class="issue-view-header">
     <div class="ivh-left">
       <div class="ivh-title">문제점 · 제언</div>
       <div class="ivh-sub">단계를 선택하면 해당 단계 의견만 표시됩니다</div>
-    </div>
-    <div class="ivh-right">
-      <div class="issue-filter-tabs" id="issue-filter-tabs">
-        <button class="ift on"  onclick="filterIssue('all',this)">전체</button>
-        <button class="ift"     onclick="filterIssue('1',this)">1단계</button>
-        <button class="ift"     onclick="filterIssue('2',this)">2단계</button>
-        <button class="ift"     onclick="filterIssue('3',this)">3단계</button>
-        <button class="ift"     onclick="filterIssue('4',this)">4단계</button>
-        <button class="ift"     onclick="filterIssue('5',this)">5단계</button>
-      </div>
     </div>
   </div>
 
@@ -1115,7 +1115,7 @@ function updateCohortLabels() {
   const is61 = CUR_COHORT === '61기';
   const note = document.getElementById('issue-cohort-note');
   if (note) note.style.display = is61 ? 'none' : 'block';
-  document.querySelectorAll('#p-issue .issue-view-header, #p-issue #issue-banner, #p-issue .issue-section')
+  document.querySelectorAll('#p-issue .issue-view-header, #p-issue #issue-filter-tabs, #p-issue #issue-banner, #p-issue .issue-section')
     .forEach(el => { el.style.display = is61 ? '' : 'none'; });
   if (is61) { const b = document.querySelector('.ift'); if (b) filterIssue('all', b); }
 }
@@ -1580,6 +1580,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.3 (2026-11-17)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.4 (2026-11-17)</div>
 </body>
 </html>
