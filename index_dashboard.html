@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v2.5 (2026-11-17)">
+<meta name="app-version" content="v2.6 (2026-11-17)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발·수지주일반 사역평가표 대시보드</title>
@@ -389,6 +389,15 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 @media (min-width:640px){
   .sf-bar,.stabs,.issue-filter-tabs{ grid-template-columns:repeat(6,1fr); }
 }
+
+/* ─── 설정: 단계별 총원 테이블 ─── */
+.set-tbl{ width:100%; border-collapse:collapse; margin-bottom:14px; font-size:.84rem; }
+.set-tbl th{ background:var(--navy); color:#fff; font-weight:700; font-size:.74rem; padding:9px 6px; text-align:center; }
+.set-tbl th:first-child{ border-radius:10px 0 0 0; } .set-tbl th:last-child{ border-radius:0 10px 0 0; }
+.set-tbl td{ padding:7px 6px; text-align:center; border-bottom:1px solid var(--border); color:var(--navy); }
+.set-tbl .st-n{ font-weight:700; }
+.set-tbl .st-i input{ width:70px; padding:7px 4px; border:1.5px solid var(--border); border-radius:8px; font-size:.95rem; text-align:center; font-family:inherit; }
+.set-tbl tfoot td{ background:#F1EFE8; font-weight:700; border-bottom:0; }
 </style>
 </head>
 <body>
@@ -1055,16 +1064,35 @@ function renderSettings() {
   lbl.textContent = CUR_COHORT;
   const src = { sheet:'시트에 저장된 값', local:'이 브라우저에 저장된 값(시트에 저장하면 모든 기기에 적용)', default:'기본값(시트에 저장하면 확정)', '':'아직 등록 안 됨' }[TOTALS_SRC] || '';
   document.getElementById('set-source').textContent = '· ' + src;
-  document.getElementById('set-inputs').innerHTML = STAGE_COLS.map((s, i) => `
-    <label style="display:flex;flex-direction:column;gap:4px;font-size:.74rem;color:var(--muted);font-weight:600">${s}
-      <input id="set-tot-${i}" type="number" min="0" max="99" inputmode="numeric" placeholder="0"
-        value="${TOTALS_SET ? (STAGE_TOTAL[s] || 0) : ''}" oninput="updateSetTotal()"
-        style="padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;text-align:center;font-family:inherit">
-    </label>`).join('');
+  const rowsHtml = STAGE_COLS.map((s, i) => {
+    const cnt = new Set(DATA.filter(r => r.stage === s).map(r => r.name)).size;
+    return `<tr>
+      <td class="st-n">${s}</td>
+      <td class="st-c" id="set-cnt-${i}" data-cnt="${cnt}">${cnt}명</td>
+      <td class="st-i"><input id="set-tot-${i}" type="number" min="0" max="99" inputmode="numeric" placeholder="0"
+        value="${TOTALS_SET ? (STAGE_TOTAL[s] || 0) : ''}" oninput="updateSetTotal()"></td>
+      <td class="st-r" id="set-rate-${i}">-</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('set-inputs').innerHTML = `<table class="set-tbl">
+    <thead><tr><th>단계</th><th>응답</th><th>총원(입력)</th><th>응답률</th></tr></thead>
+    <tbody>${rowsHtml}</tbody>
+    <tfoot><tr><td class="st-n">합계</td><td class="st-c" id="set-cnt-sum">-</td><td class="st-i" id="set-tot-sum">-</td><td class="st-r" id="set-rate-sum">-</td></tr></tfoot>
+  </table>`;
   updateSetTotal();
 }
 function updateSetTotal() {
-  const sum = STAGE_COLS.reduce((a, s, i) => a + (parseInt((document.getElementById('set-tot-' + i) || {}).value) || 0), 0);
+  let sum = 0, csum = 0;
+  STAGE_COLS.forEach((s, i) => {
+    const t = parseInt((document.getElementById('set-tot-' + i) || {}).value) || 0;
+    const c = +((document.getElementById('set-cnt-' + i) || {dataset:{}}).dataset.cnt) || 0;
+    sum += t; csum += c;
+    const r = document.getElementById('set-rate-' + i);
+    if (r) r.textContent = t ? (c / t * 100).toFixed(1) + '%' : '-';
+  });
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  set('set-cnt-sum', csum + '명'); set('set-tot-sum', sum + '명');
+  set('set-rate-sum', sum ? (csum / sum * 100).toFixed(1) + '%' : '-');
   const el = document.getElementById('set-total');
   if (el) el.textContent = `합계 ${sum}명`;
 }
@@ -1605,6 +1633,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.5 (2026-11-17)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.6 (2026-11-17)</div>
 </body>
 </html>
