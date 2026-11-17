@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v2.7 (2026-11-17)">
+<meta name="app-version" content="v2.8 (2026-11-17)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발·수지주일반 사역평가표 대시보드</title>
@@ -400,11 +400,15 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 .set-tbl tfoot td{ background:#F1EFE8; font-weight:700; border-bottom:0; }
 
 /* ─── 응답 비율 KPI: 1행 4열 ─── */
-#resp-kpis{ grid-template-columns:repeat(4,1fr); gap:6px; }
-#resp-kpis .kpi{ padding:10px 4px; text-align:center; min-width:0; }
-#resp-kpis .kpi-v{ font-size:1.05rem; white-space:nowrap; }
-#resp-kpis .kpi-l{ font-size:.62rem; margin-top:3px; line-height:1.25; }
-@media (min-width:640px){ #resp-kpis .kpi-v{ font-size:1.5rem; } #resp-kpis .kpi-l{ font-size:.7rem; } #resp-kpis{ gap:10px; } }
+#resp-kpis, #stage-panels .kpis{ grid-template-columns:repeat(4,1fr); gap:6px; }
+#resp-kpis .kpi, #stage-panels .kpis .kpi{ padding:10px 4px; text-align:center; min-width:0; }
+#resp-kpis .kpi-v, #stage-panels .kpis .kpi-v{ font-size:1.05rem; white-space:nowrap; }
+#resp-kpis .kpi-l, #stage-panels .kpis .kpi-l{ font-size:.62rem; margin-top:3px; line-height:1.25; }
+@media (min-width:640px){
+  #resp-kpis .kpi-v, #stage-panels .kpis .kpi-v{ font-size:1.5rem; }
+  #resp-kpis .kpi-l, #stage-panels .kpis .kpi-l{ font-size:.7rem; }
+  #resp-kpis, #stage-panels .kpis{ gap:10px; }
+}
 </style>
 </head>
 <body>
@@ -1640,6 +1644,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.7 (2026-11-17)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.8 (2026-11-17)</div>
 </body>
 </html>
