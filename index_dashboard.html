@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v2.8 (2026-11-17)">
+<meta name="app-version" content="v2.9 (2026-11-19)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발·수지주일반 사역평가표 대시보드</title>
@@ -614,6 +614,8 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 <!-- ══════════════════════════ 문제점 · 제언 ══════════════════════════ -->
 <div id="p-issue" class="pane">
 
+  <div id="issue-dyn" style="display:none"></div>
+
   <div id="issue-cohort-note" class="al al-y" style="display:none">
     <strong>문제점 · 제언</strong> 탭은 <strong>61기 응답을 기준으로 작성된 고정 분석</strong>입니다.
     선택한 기수에는 해당 내용이 맞지 않아 숨겼습니다. 응답이 모이면 해당 기수 기준으로 새로 작성해야 합니다.
@@ -1162,10 +1164,58 @@ function updateCohortLabels() {
   // 문제점·제언 탭은 61기 고정 분석 → 다른 기수에서는 숨김
   const is61 = CUR_COHORT === '61기';
   const note = document.getElementById('issue-cohort-note');
-  if (note) note.style.display = is61 ? 'none' : 'block';
-  document.querySelectorAll('#p-issue .issue-view-header, #p-issue #issue-filter-tabs, #p-issue #issue-banner, #p-issue .issue-section')
+  if (note) note.style.display = 'none';
+  document.querySelectorAll('#p-issue .issue-view-header, #p-issue #issue-banner, #p-issue .issue-section')
     .forEach(el => { el.style.display = is61 ? '' : 'none'; });
-  if (is61) { const b = document.querySelector('.ift'); if (b) filterIssue('all', b); }
+  const dyn = document.getElementById('issue-dyn');
+  if (dyn) dyn.style.display = is61 ? 'none' : 'block';
+  const b = document.querySelector('.ift');
+  if (is61) { if (b) filterIssue('all', b); }
+  else { document.querySelectorAll('.ift').forEach(x => x.classList.remove('on')); if (b) b.classList.add('on'); renderIssueDyn('all'); }
+}
+
+/* ─── 문제점·제언: 61기 외 기수는 응답 데이터로 자동 생성 ─── */
+function renderIssueDyn(stage) {
+  const box = document.getElementById('issue-dyn');
+  if (!box) return;
+  const inStage = r => stage === 'all' || r.stage === stage + '단계' || r.stage === stage;
+  const D = DATA.filter(inStage);
+  const label = stage === 'all' ? '전체' : stage + '단계';
+  const items = [];   // [level, title, detail]  level: r=긴급, y=주의, b=참고
+  // 응답률
+  const cols = stage === 'all' ? STAGE_COLS : [stage + '단계'];
+  cols.forEach(c => {
+    const tot = STAGE_TOTAL[c] || 0;
+    const cnt = new Set(DATA.filter(r => r.stage === c).map(r => r.name)).size;
+    if (!tot) return;
+    const pct = cnt / tot * 100;
+    if (cnt === 0) items.push(['r', `${c} 응답 없음`, `수강 ${tot}명 중 응답이 없습니다. 개별 링크 발송으로 추가 수거가 필요합니다.`]);
+    else if (pct < 50) items.push(['y', `${c} 응답률 낮음 (${pct.toFixed(0)}%)`, `수강 ${tot}명 중 ${cnt}명 응답. 결과가 해당 단계를 대표하지 못할 수 있습니다.`]);
+  });
+  if (!TOTALS_SET) items.push(['y', '총원 미설정', '⚙️ 설정 탭에서 단계별 총원을 저장하면 응답률 판단이 정확해집니다.']);
+  // 평점 낮은 항목
+  const allQs = [...CLASS_QS, ...TRAIN_QS, ...TRAINER_QS];
+  const scored = allQs.map(q => ({l:q.l, a:avg(D.map(r => r[q.k]))})).filter(x => x.a !== null).sort((x, y) => x.a - y.a);
+  scored.slice(0, 3).forEach(x => { if (x.a < 9) items.push([x.a < 8 ? 'r' : 'y', `${x.l} 평점 ${x.a.toFixed(1)}점`, '다른 항목보다 낮은 점수입니다. 아래 주관식 의견과 함께 개선 방향을 확인하세요.']); });
+  // 결석
+  const ab = avg(D.map(r => r.absent));
+  if (ab !== null && ab >= 1.5) items.push(['y', `평균 결석 ${ab.toFixed(1)}회`, '결석 이유를 확인하고 보강·독려 방안을 검토하세요.']);
+
+  const cls = {r:'al-r', y:'al-y', b:'al-b'};
+  const itemHtml = items.length
+    ? items.map(([l, t, d]) => `<div class="al ${cls[l]}" style="margin-bottom:8px"><strong>${esc(t)}</strong><br>${esc(d)}</div>`).join('')
+    : '<div class="empty-state">자동 점검에서 특이사항이 없습니다.</div>';
+  const scoreHtml = scored.length
+    ? `<div class="card">${scored.slice(0, 5).map(x => scoreBar(x.l, x.a, '#B94A3A')).join('')}</div>`
+    : '<div class="empty-state">평점 응답 없음</div>';
+  const qs = (keys, rows) => quoteList(rows || D, keys);
+  box.innerHTML = `
+    <div class="al al-n" style="margin-bottom:1rem">${CUR_COHORT} <strong>${label}</strong> 응답 ${D.length}건을 기준으로 자동 생성된 점검 결과입니다. 응답이 적을 때는 참고용으로만 보세요.</div>
+    <div class="sec-ttl">🔴 점검 필요 항목</div>${itemHtml}
+    <div class="sec-ttl">평점이 낮은 항목 (하위 5)</div>${scoreHtml}
+    <div class="sec-ttl">제안 사항</div><div class="card">${qs(['suggest_1','suggest_2','suggest_3'])}</div>
+    <div class="sec-ttl">어려운 경험 &amp; 하나님의 지혜</div><div class="card">${qs(['field_5b'])}</div>
+    <div class="sec-ttl">결석 이유</div><div class="card">${qs(['absent_reason'], D.filter(r => r.absent_reason))}</div>`;
 }
 
 /* ═══════════════════════════════════════════════
@@ -1188,6 +1238,7 @@ const STAGE_BANNERS = {
 function filterIssue(stage, btn) {
   document.querySelectorAll('.ift').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
+  if (CUR_COHORT !== '61기') { renderIssueDyn(stage); return; }
 
   const bannerEl = document.getElementById('issue-banner');
   bannerEl.innerHTML = STAGE_BANNERS[stage] || STAGE_BANNERS.all;
@@ -1644,6 +1695,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.8 (2026-11-17)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v2.9 (2026-11-19)</div>
 </body>
 </html>
