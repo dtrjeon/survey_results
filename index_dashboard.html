@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v3.1 (2026-11-27)">
+<meta name="app-version" content="v3.2 (2026-11-27)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>전도폭발·수지주일반 사역평가표 대시보드</title>
+<title>전도폭발 사역평가 결과</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -454,7 +454,7 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 <!-- HEADER -->
 <header class="hdr">
   <div class="hdr-inner">
-    <h1>전도폭발 사역 평가표 · 실시간 분석 대시보드</h1>
+    <h1>전도폭발 사역평가 결과</h1>
     <div class="hdr-sub">
       <span id="hdr-cohort-lbl">제62기 수지주일반</span>
       <span id="hdr-total">전체 수강 —명</span>
@@ -1175,7 +1175,7 @@ function updateCohortLabels() {
   set('hdr-cohort-lbl', `제${n}기 수지주일반`);
   set('hdr-total', total ? `전체 수강 ${total}명${TOTALS_SET ? '' : ' (임시)'}` : '전체 수강 —명');
   set('login-sub', `제${n}기 수지주일반 · 분석 대시보드`);
-  document.title = `${n}기 전도폭발·수지주일반 사역평가표`;
+  document.title = `${n}기 전도폭발 사역평가 결과`;
   const sel = document.getElementById('cohort-sel');
   if (sel && sel.value !== CUR_COHORT) sel.value = CUR_COHORT;
 
@@ -1735,6 +1735,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.1 (2026-11-27)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.2 (2026-11-27)</div>
 </body>
 </html>
