@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v3.6 (2026-11-27)">
+<meta name="app-version" content="v3.7 (2026-11-27)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발 사역평가 결과</title>
@@ -1224,7 +1224,7 @@ function renderIssueDyn(stage) {
   const scored = allQs.map(q => ({l:q.l, a:avg(D.map(r => r[q.k]))})).filter(x => x.a !== null).sort((x, y) => x.a - y.a);
   scored.slice(0, 3).forEach(x => { if (x.a < 9) items.push([x.a < 8 ? 'r' : 'y', `${x.l} 평점 ${x.a.toFixed(1)}점`, '다른 항목보다 낮은 점수입니다. 아래 주관식 의견과 함께 개선 방향을 확인하세요.']); });
   // 결석
-  const ab = avg(D.map(r => r.absent));
+  const ab = D.length ? D.reduce((t, r) => t + (parseInt(r.absent) || 0), 0) / D.length : null;   // 결석 0회 포함 전원 평균
   if (ab !== null && ab >= 1.5) items.push(['y', `평균 결석 ${ab.toFixed(1)}회`, '결석 이유를 확인하고 보강·독려 방안을 검토하세요.']);
 
   const cls = {r:'al-r', y:'al-y', b:'al-b'};
@@ -1680,6 +1680,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.6 (2026-11-27)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.7 (2026-11-27)</div>
 </body>
 </html>
