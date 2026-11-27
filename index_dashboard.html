@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v3.10 (2026-11-27)">
+<meta name="app-version" content="v3.11 (2026-11-27)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발 사역평가 결과</title>
@@ -620,6 +620,21 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
       <span id="set-status" style="font-size:.78rem;color:var(--muted)"></span>
     </div>
   </div>
+
+  <div class="sec-ttl">AI 분석용 API 키 (제안 사항 그룹핑)</div>
+  <div class="card">
+    <div style="font-size:.82rem;line-height:1.7;color:var(--muted);margin-bottom:12px">
+      문제점·제언 탭의 <strong style="color:var(--navy)">AI 그룹핑·개선방안</strong> 버튼에 쓰는 Anthropic API 키입니다.
+      키는 <strong style="color:var(--navy)">이 기기의 브라우저에만 저장</strong>되고 GitHub·구글시트에는 올라가지 않습니다.
+      분석 시 제안 사항 <strong style="color:var(--navy)">내용만</strong> 전송하고 응답자 이름은 보내지 않습니다.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <input id="ai-key-input" type="password" autocomplete="off" placeholder="sk-ant-..." style="flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;font-size:.85rem">
+      <button class="btn-sync" style="padding:9px 18px;font-size:.85rem" onclick="saveAiKey()">저장</button>
+      <button class="btn-sync" style="padding:9px 18px;font-size:.85rem;background:#9CA3AF" onclick="clearAiKey()">삭제</button>
+    </div>
+    <div id="ai-key-status" style="font-size:.78rem;color:var(--muted);margin-top:8px"></div>
+  </div>
 </div>
 
 <!-- ══════════════════════════ 문제점 · 제언 ══════════════════════════ -->
@@ -885,6 +900,7 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
   </div>
 
 
+  <div id="issue-ai"></div>
   <div id="issue-suggest"></div>
 </div>
 
@@ -1095,6 +1111,7 @@ function resolveTotals() {
 
 /* ─── ⚙️ 설정: 총원 등록 ─── */
 function renderSettings() {
+  refreshAiKeyStatus();
   const lbl = document.getElementById('set-cohort-lbl');
   if (!lbl) return;
   lbl.textContent = CUR_COHORT;
@@ -1252,13 +1269,116 @@ const STAGE_BANNERS = {
 };
 
 let currentIssueStage = 'all';
-/* 제안 사항 — 주관식 탭에서 이동: 선택한 단계의 응답자 원문 (문제점·제언 탭 하단) */
+
+/* 제안 사항 — 선택한 단계의 응답자 원문 (문제점·제언 탭 하단) */
 function renderIssueSuggest() {
   const box = document.getElementById('issue-suggest');
   if (!box) return;
-  const st = currentIssueStage;
-  const D = DATA.filter(r => st === 'all' || r.stage === st + '단계' || r.stage === st);
+  const D = issueRows();
   box.innerHTML = `<div class="sec-ttl">💡 제안 사항 (응답자 원문)</div><div class="card">${quoteList(D, ['suggest_1','suggest_2','suggest_3'])}</div>`;
+  renderIssueAI();
+}
+function issueRows() {
+  const st = currentIssueStage;
+  return DATA.filter(r => st === 'all' || r.stage === st + '단계' || r.stage === st);
+}
+
+/* ─── AI 그룹핑 · 개선방안 (Anthropic API, 브라우저에서 직접 호출) ─── */
+const AI_MODEL = 'claude-sonnet-5-5';
+function aiKey() { try { return localStorage.getItem('dash_ai_key') || ''; } catch(e) { return ''; } }
+function refreshAiKeyStatus() {
+  const el = document.getElementById('ai-key-status');
+  if (el) el.textContent = aiKey() ? '✅ 이 기기에 키가 저장되어 있습니다.' : '키가 저장되어 있지 않습니다.';
+}
+function saveAiKey() {
+  const v = (document.getElementById('ai-key-input').value || '').trim();
+  if (!v) { refreshAiKeyStatus(); return; }
+  try { localStorage.setItem('dash_ai_key', v); } catch(e) {}
+  document.getElementById('ai-key-input').value = '';
+  refreshAiKeyStatus(); renderIssueAI();
+}
+function clearAiKey() {
+  try { localStorage.removeItem('dash_ai_key'); } catch(e) {}
+  refreshAiKeyStatus(); renderIssueAI();
+}
+function suggestItems() {
+  const items = [];
+  issueRows().forEach(r => [r.suggest_1, r.suggest_2, r.suggest_3].forEach(v => {
+    v = (v || '').trim();
+    if (v) items.push({ stage: r.stage || '?', text: v, name: r.name, group: r.group, role: r.role });
+  }));
+  return items;
+}
+function strHash(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0; return h; }
+function aiCacheKey(items) { return 'dash_ai_' + CUR_COHORT + '_' + currentIssueStage + '_' + strHash(items.map(i => i.text).join('|')); }
+function aiLoadCache(items) { try { return JSON.parse(localStorage.getItem(aiCacheKey(items)) || 'null'); } catch(e) { return null; } }
+
+function renderIssueAI() {
+  const box = document.getElementById('issue-ai');
+  if (!box) return;
+  const items = suggestItems();
+  if (!items.length) { box.innerHTML = ''; return; }
+  const cached = aiLoadCache(items);
+  const hasKey = !!aiKey();
+  const btn = `<button class="btn-sync" style="padding:8px 18px;font-size:.82rem" onclick="generateAI()" ${hasKey ? '' : 'disabled'}>${cached ? '🔄 다시 생성' : '🤖 AI로 그룹핑·개선방안 생성'}</button>`;
+  let body = '';
+  if (!hasKey) body = '<div class="al al-y">⚙️ 설정 탭에서 Anthropic API 키를 먼저 저장해 주세요.</div>';
+  else if (!cached) body = `<div class="al al-n">제안 ${items.length}건을 비슷한 의견끼리 묶고 개선방안을 만듭니다. 버튼을 눌러 주세요.</div>`;
+  else body = renderAIResult(cached, items);
+  box.innerHTML = `<div class="sec-ttl">🤖 제안 사항 그룹핑 · 개선방안</div>
+    <div class="card"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">${btn}
+    <span id="ai-status" style="font-size:.75rem;color:var(--muted)">${cached ? '생성 ' + esc(cached.at || '') + ' · ' + items.length + '건 기준' : ''}</span></div>${body}</div>`;
+}
+
+function renderAIResult(res, items) {
+  const prCls = { '높음': 'al-r', '보통': 'al-y', '낮음': 'al-b' };
+  const groups = (res.groups || []).map(g => {
+    const idx = (g.items || []).filter(n => items[n - 1]);
+    const quotes = idx.map(n => { const it = items[n - 1];
+      return `<div class="qt" style="margin:4px 0">${esc(it.text)}<div class="qt-m">${badge(it.stage)} <span style="color:var(--muted)">${esc(it.role || '')} · ${esc(it.name || '')} ${it.group ? '· ' + esc(it.group) : ''}</span></div></div>`; }).join('');
+    const acts = (g.actions || []).map(a => `<li>${esc(a)}</li>`).join('');
+    return `<div class="al ${prCls[g.priority] || 'al-n'}" style="margin-bottom:10px">
+      <strong>${esc(g.title || '')}</strong> <span style="font-size:.72rem;color:var(--muted)">· 의견 ${idx.length}건${g.priority ? ' · 우선순위 ' + esc(g.priority) : ''}</span>
+      ${g.summary ? `<div style="margin-top:4px">${esc(g.summary)}</div>` : ''}
+      ${acts ? `<div style="margin-top:6px;font-weight:700;font-size:.78rem">개선방안</div><ul style="margin:4px 0 0 18px;padding:0;line-height:1.6">${acts}</ul>` : ''}
+      ${quotes ? `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:.75rem;color:var(--muted)">응답자 원문 ${idx.length}건 보기</summary>${quotes}</details>` : ''}
+    </div>`; }).join('');
+  return (res.overall ? `<div class="al al-n" style="margin-bottom:10px"><strong>총평</strong><br>${esc(res.overall)}</div>` : '') + groups;
+}
+
+async function generateAI() {
+  const items = suggestItems();
+  const key = aiKey();
+  const st = document.getElementById('ai-status');
+  if (!items.length || !key) return;
+  if (st) st.textContent = '분석 중… (10~30초)';
+  document.querySelectorAll('#issue-ai button').forEach(b => b.disabled = true);
+  const list = items.slice(0, 200).map((it, i) => `[${i + 1}] (${it.stage}) ${it.text.replace(/\s+/g, ' ')}`).join('\n');
+  const prompt = `전도폭발 훈련 사역 평가표에서 수강생이 쓴 "제안 사항"입니다. 번호는 의견 번호입니다.\n\n${list}\n\n` +
+`다음 작업을 하세요.\n1) 의미가 비슷한 의견끼리 그룹으로 묶습니다. 한 의견은 한 그룹에만 넣고, 어디에도 안 맞는 의견은 "기타" 그룹으로 묶습니다.\n` +
+`2) 그룹마다 훈련 운영진·교사가 실행할 수 있는 구체적인 개선방안을 1~3개 씁니다. 원문에 없는 사실은 지어내지 마세요.\n` +
+`3) 그룹 우선순위(높음/보통/낮음)는 의견 수와 영향도를 보고 정합니다. 그룹은 의견이 많은 순서로 나열합니다.\n` +
+`4) 전체 총평은 2문장 이내로 씁니다.\n\n` +
+`JSON만 출력하세요(코드블록 금지). 형식: {"overall":"...","groups":[{"title":"그룹 이름","summary":"한 문장 요약","items":[의견번호,...],"actions":["개선방안",...],"priority":"높음"}]}`;
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: AI_MODEL, max_tokens: 4000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error((data.error && data.error.message) || ('HTTP ' + resp.status));
+    let txt = (data.content || []).map(c => c.text || '').join('').trim();
+    txt = txt.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+    const res = JSON.parse(txt);
+    res.at = new Date().toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    try { localStorage.setItem(aiCacheKey(items), JSON.stringify(res)); } catch(e) {}
+    renderIssueAI();
+  } catch (e) {
+    renderIssueAI();
+    const s2 = document.getElementById('ai-status');
+    if (s2) s2.textContent = '⚠ 실패: ' + e.message;
+  }
 }
 
 function filterIssue(stage, btn) {
@@ -1661,6 +1781,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.10 (2026-11-27)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.11 (2026-11-27)</div>
 </body>
 </html>
