@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v3.4 (2026-11-27)">
+<meta name="app-version" content="v3.5 (2026-11-27)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발 사역평가 결과</title>
@@ -481,7 +481,6 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 <!-- TABS -->
 <nav class="tabs">
   <button class="tab on"  onclick="swTab('resp',this)">📊 응답 비율</button>
-  <button class="tab"     onclick="swTab('stage',this)">📋 단계별 분석</button>
   <button class="tab"     onclick="swTab('rating',this)">⭐ 평점 분석</button>
   <button class="tab"     onclick="swTab('field',this)">🚶 현장실습</button>
   <button class="tab"     onclick="swTab('qual',this)">💬 주관식</button>
@@ -513,16 +512,6 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 </div>
 
 <!-- ══════════════════════════ 단계별 ══════════════════════════ -->
-<div id="p-stage" class="pane">
-  <div class="stabs" id="stage-stabs"></div>
-  <div id="stage-panels"></div>
-
-  <div class="sec-ttl">단계별 평점 비교</div>
-  <div class="chart-wrap" style="height:250px"><canvas id="c-stage-score"></canvas></div>
-  <div class="sec-ttl">단계별 결신자 · 7일후 재방문</div>
-  <div class="chart-wrap" style="height:200px"><canvas id="c-stage-field"></canvas></div>
-</div>
-
 <!-- ══════════════════════════ 평점 분석 ══════════════════════════ -->
 <div id="p-rating" class="pane">
   <!-- 단계 필터 -->
@@ -536,6 +525,7 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
   </div>
 
   <div class="kpis" id="rating-kpis"></div>
+  <div id="rating-warn"></div>
 
   <div class="sec-ttl">교실 수업 평가 (5문항)</div>
   <div class="card" id="class-bars"></div>
@@ -556,6 +546,9 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 
   <div class="sec-ttl">훈련생 vs 훈련자 역할별 비교</div>
   <div class="chart-wrap" style="height:260px"><canvas id="c-role-compare"></canvas></div>
+
+  <div class="sec-ttl">단계별 평점 비교</div>
+  <div class="chart-wrap" style="height:250px"><canvas id="c-stage-score"></canvas></div>
 </div>
 
 <!-- ══════════════════════════ 현장실습 ══════════════════════════ -->
@@ -580,6 +573,9 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 
   <div class="sec-ttl">현장실습 지표 차트</div>
   <div class="chart-wrap" style="height:200px"><canvas id="c-field-bar"></canvas></div>
+
+  <div class="sec-ttl">단계별 결신자 · 7일후 재방문</div>
+  <div class="chart-wrap" style="height:220px"><canvas id="c-stage-field"></canvas></div>
 </div>
 
 <!-- ══════════════════════════ 주관식 ══════════════════════════ -->
@@ -1331,7 +1327,7 @@ function destroyChart(id) { if(charts[id]) { charts[id].destroy(); delete charts
 ═══════════════════════════════════════════════ */
 function renderAll() {
   renderResp();
-  renderStage();
+  renderStageCharts();
   renderRating();
   renderField();
   renderQual();
@@ -1431,62 +1427,17 @@ function renderResp() {
 }
 
 /* ─── 단계별 ─── */
-function renderStage() {
-  const stabs = document.getElementById('stage-stabs');
-  const panels = document.getElementById('stage-panels');
-  stabs.innerHTML = '';
-  panels.innerHTML = '';
-
-  ['전체',...STAGE_COLS].forEach((stage,si) => {
-    const isAll = si===0;
-    const rows = isAll ? DATA : DATA.filter(r=>r.stage===stage);
-    const tot  = isAll ? STAGE_COLS.reduce((a,c)=>a+(STAGE_TOTAL[c]||0),0) : STAGE_TOTAL[stage];
-    const pct  = tot ? (rows.length/tot*100) : 0;
-    const btn  = document.createElement('button');
-    btn.className = 'stab' + (si===0?' on':'');
-    btn.textContent = isAll ? `전체 (${rows.length}명)` : `${stage} (${rows.length}/${tot})`;
-    btn.onclick = function(){ document.querySelectorAll('.stab').forEach(b=>b.classList.remove('on')); document.querySelectorAll('.sp').forEach(p=>p.classList.remove('on')); this.classList.add('on'); document.getElementById('sp-'+si).classList.add('on'); };
-    stabs.appendChild(btn);
-
-    const kpis = [['응답',rows.length+'명'],['결신자',sum(rows.map(r=>r.field_4))+'건'],['7일후 재방문',sum(rows.map(r=>r.field_3))+'건'],['결석평균',(avg(rows.map(r=>r.absent))||0).toFixed(1)+'회']];
-
-    const allQs = [...CLASS_QS,...TRAIN_QS,...TRAINER_QS];
-    const barHtml = allQs.map(q => {
-      const a = avg(rows.map(r=>r[q.k]));
-      const ci = Math.min(si-1, STAGE_CLR.length-1);
-      return a!==null ? scoreBar(q.l, a, isAll ? '#1B2E4B' : STAGE_CLR[ci]) : '';
-    }).join('');
-
-    let warning = '';
-    if(rows.length===0) warning = `<div class="al al-r" style="margin-bottom:10px"><strong>응답 없음.</strong> 이 단계의 데이터가 수집되지 않았습니다. 개별 연락을 통해 응답을 요청하세요.</div>`;
-    else if(rows.length<=1) warning = `<div class="al al-r" style="margin-bottom:10px">응답자 ${rows.length}명으로 대표성이 매우 제한적입니다. 추가 수거 후 해석을 권장합니다.</div>`;
-
-    const div = document.createElement('div');
-    div.id = 'sp-' + si;
-    div.className = 'sp' + (si===0?' on':'');
-    div.innerHTML = `
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        ${isAll ? '<span class="b" style="background:#1B2E4B;color:#fff">전체</span>' : badge(stage)}
-        <span style="font-size:.75rem;color:var(--muted)">${tot}명 중 ${rows.length}명 응답</span>
-        ${pill(pct)}
-      </div>
-      ${warning}
-      <div class="kpis">${kpis.map(([l,v])=>`<div class="kpi"><div class="kpi-v">${v}</div><div class="kpi-l">${l}</div></div>`).join('')}</div>
-      ${rows.length>0?`<div class="sec-ttl">평점 (10점 척도)</div><div class="card">${barHtml}</div>`:''}
-      ${rows.length>0?`<div class="al al-n" style="margin-top:10px">유익한 경험·어려운 경험·제안 사항 등 주관식 의견은 <strong>💬 주관식</strong> 탭에서 볼 수 있습니다.</div>`:''}
-    `;
-    panels.appendChild(div);
-  });
-
-  // charts
-  const stagesWithData = ['1단계','2단계','3단계','4단계'];
-  const classAvgs = stagesWithData.map(s=>{ const r=DATA.filter(d=>d.stage===s); return avg(CLASS_QS.flatMap(q=>r.map(d=>d[q.k]))); });
-  const trainAvgs = stagesWithData.map(s=>{ const r=DATA.filter(d=>d.stage===s); return avg(TRAIN_QS.flatMap(q=>r.map(d=>d[q.k]))); });
+function renderStageCharts() {
+  // 단계 간 비교 차트 (1~5단계 전체) — 평점 분석 / 현장실습 탭 하단
+  const byStage = STAGE_COLS.map(s => DATA.filter(d => d.stage === s));
+  const classAvgs = byStage.map(r => avg(CLASS_QS.flatMap(q => r.map(d => d[q.k]))));
+  const trainAvgs = byStage.map(r => avg(TRAIN_QS.flatMap(q => r.map(d => d[q.k]))));
+  const labels = STAGE_COLS.map((s, i) => `${s}(${byStage[i].length}명)`);
 
   destroyChart('stage-score');
   charts['stage-score'] = new Chart(document.getElementById('c-stage-score'),{
     type:'bar',
-    data:{labels:stagesWithData,datasets:[
+    data:{labels,datasets:[
       {label:'교실수업 평균',data:classAvgs.map(v=>v?+v.toFixed(2):null),backgroundColor:'#185FA5',borderRadius:4},
       {label:'훈련전체 평균',data:trainAvgs.map(v=>v?+v.toFixed(2):null),backgroundColor:'#BA7517',borderRadius:4}
     ]},
@@ -1496,11 +1447,11 @@ function renderStage() {
     }
   });
 
-  const fieldData = stagesWithData.map(s=>{ const r=DATA.filter(d=>d.stage===s); return {conv:sum(r.map(d=>d.field_4)),visit:sum(r.map(d=>d.field_3))}; });
+  const fieldData = byStage.map(r => ({conv:sum(r.map(d=>d.field_4)),visit:sum(r.map(d=>d.field_3))}));
   destroyChart('stage-field');
   charts['stage-field'] = new Chart(document.getElementById('c-stage-field'),{
     type:'bar',
-    data:{labels:stagesWithData,datasets:[
+    data:{labels,datasets:[
       {label:'결신자',data:fieldData.map(d=>d.conv),backgroundColor:'#0F6E56',borderRadius:4},
       {label:'7일후 재방문',data:fieldData.map(d=>d.visit),backgroundColor:'#5DCAA5',borderRadius:4}
     ]},
@@ -1539,6 +1490,11 @@ function renderRating() {
   const trainerAvgAll = avg(TRAINER_QS.flatMap(q => D.map(r => r[q.k])));
 
   const stageLabel = stage === 'all' ? '전체 종합' : stage + '단계';
+  const warnEl = document.getElementById('rating-warn');
+  warnEl.innerHTML = D.length === 0
+    ? `<div class="al al-r" style="margin-bottom:10px"><strong>응답 없음.</strong> 이 단계의 데이터가 수집되지 않았습니다. 개별 연락을 통해 추가 수거가 필요합니다.</div>`
+    : (stage !== 'all' && D.length <= 1)
+      ? `<div class="al al-y" style="margin-bottom:10px">응답자 ${D.length}명으로 대표성이 매우 제한적입니다. 추가 수거 후 해석을 권장합니다.</div>` : '';
   const trainee = D.filter(r => r.role === '훈련생');
   const trainer = D.filter(r => r.role === '훈련자');
 
@@ -1715,6 +1671,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.4 (2026-11-27)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.5 (2026-11-27)</div>
 </body>
 </html>
