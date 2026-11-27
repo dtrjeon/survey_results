@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v3.7 (2026-11-27)">
+<meta name="app-version" content="v3.8 (2026-11-27)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발 사역평가 결과</title>
@@ -532,9 +532,6 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 
   <div class="sec-ttl">결석 현황</div>
   <div class="card" id="absent-card"></div>
-
-  <div class="sec-ttl">훈련생 vs 훈련자 교실수업 평가 비교</div>
-  <div class="chart-wrap" style="height:260px"><canvas id="c-role-compare"></canvas></div>
 
   <div class="sec-ttl">단계별 교실수업 평점 비교</div>
   <div class="chart-wrap" style="height:230px"><canvas id="c-stage-score"></canvas></div>
@@ -1506,15 +1503,11 @@ function renderRating() {
     ? `<div class="al al-r" style="margin-bottom:10px"><strong>응답 없음.</strong> 이 단계의 데이터가 수집되지 않았습니다. 개별 연락을 통해 추가 수거가 필요합니다.</div>`
     : (stage !== 'all' && D.length <= 1)
       ? `<div class="al al-y" style="margin-bottom:10px">응답자 ${D.length}명으로 대표성이 매우 제한적입니다. 추가 수거 후 해석을 권장합니다.</div>` : '';
-  const trainee = D.filter(r => r.role === '훈련생');
-  const trainer = D.filter(r => r.role === '훈련자');
 
   document.getElementById('rating-kpis').innerHTML = [
     [D.length + '명', stageLabel + ' 응답'],
     [classAvgAll ? classAvgAll.toFixed(1) : '—', '교실수업 평균'],
     [absAvg.toFixed(1) + '회', '결석 평균'],
-    [trainee.length + '명', '훈련생'],
-    [trainer.length + '명', '훈련자'],
   ].map(([v, l]) => `<div class="kpi"><div class="kpi-v">${v}</div><div class="kpi-l">${l}</div></div>`).join('');
 
   const barColor = stage === 'all' ? '#185FA5' : STAGE_CLR[parseInt(stage) - 1] || '#185FA5';
@@ -1529,25 +1522,6 @@ function renderRating() {
         const pct = (n / D.length * 100).toFixed(1);
         return `<div class="sb-row"><span class="sb-lbl">결석 ${c}회</span><div class="sb-bar"><div class="sb-fill" style="width:${pct}%;background:#1B2E4B">${n}명 (${pct}%)</div></div></div>`;
       }).join('');
-
-  // 역할별 비교 차트 (교실수업 문항)
-  destroyChart('role-compare');
-  if (D.length === 0) return;
-  charts['role-compare'] = new Chart(document.getElementById('c-role-compare'), {
-    type: 'bar',
-    data: {
-      labels: CLASS_QS.map(q => q.l),
-      datasets: [
-        { label: '훈련생', data: CLASS_QS.map(q => { const a = avg(trainee.map(r => r[q.k])); return a ? +a.toFixed(2) : null; }), backgroundColor: '#378ADD', borderRadius: 4 },
-        { label: '훈련자', data: CLASS_QS.map(q => { const a = avg(trainer.map(r => r[q.k])); return a ? +a.toFixed(2) : null; }), backgroundColor: '#EF9F27', borderRadius: 4 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } } },
-      scales: { x: { ticks: { font: { size: 10 }, maxRotation: 45 }, grid: { display: false } }, y: { min: 4, max: 10, grid: { color: 'rgba(0,0,0,.06)' } } }
-    }
-  });
 }
 
 /* ─── 현장실습 (단계 필터 지원) ─── */
@@ -1680,6 +1654,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.7 (2026-11-27)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.8 (2026-11-27)</div>
 </body>
 </html>
