@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v3.9 (2026-11-27)">
+<meta name="app-version" content="v3.10 (2026-11-27)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발 사역평가 결과</title>
@@ -1228,13 +1228,9 @@ function renderIssueDyn(stage) {
   const itemHtml = items.length
     ? items.map(([l, t, d]) => `<div class="al ${cls[l]}" style="margin-bottom:8px"><strong>${esc(t)}</strong><br>${esc(d)}</div>`).join('')
     : '<div class="empty-state">자동 점검에서 특이사항이 없습니다.</div>';
-  const scoreHtml = scored.length
-    ? `<div class="card">${scored.slice(0, 5).map(x => scoreBar(x.l, x.a, '#B94A3A')).join('')}</div>`
-    : '<div class="empty-state">평점 응답 없음</div>';
   box.innerHTML = `
     <div class="al al-n" style="margin-bottom:1rem">${CUR_COHORT} <strong>${label}</strong> 응답 ${D.length}건을 기준으로 자동 생성된 점검 결과입니다. 응답이 적을 때는 참고용으로만 보세요.</div>
     <div class="sec-ttl">🔴 점검 필요 항목</div>${itemHtml}
-    <div class="sec-ttl">평점이 낮은 항목 (하위 5)</div>${scoreHtml}
     <div class="al al-n" style="margin-top:1rem">어려운 경험 · 결석 이유 등 다른 주관식 의견 원문은 <strong>💬 주관식</strong> 탭에서 단계별로 볼 수 있습니다.</div>`;
 }
 
@@ -1665,6 +1661,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.9 (2026-11-27)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.10 (2026-11-27)</div>
 </body>
 </html>
