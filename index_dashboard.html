@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v3.3 (2026-11-27)">
+<meta name="app-version" content="v3.4 (2026-11-27)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발 사역평가 결과</title>
@@ -918,6 +918,8 @@ const TRAIN_QS   = [{k:'train_1',l:'전도자 무장'},{k:'train_2',l:'팀원 �
 const TRAINER_QS = [{k:'trainer_1',l:'복음제시 도움'},{k:'trainer_2',l:'무장 도움'}];
 
 let DATA    = [];
+let DUP_COUNT = {};   // 이름별 시트 응답 행 수 (중복 확인용)
+let RAW_COUNT = 0;    // 중복 제거 전 응답 행 수
 const RN_OPEN = new Set();   // 응답자 명단 펼친 단계 (기본: 모두 접힘)
 let charts  = {};
 let SESSION_PW = '';   // 로그인 후 세션에 저장
@@ -1015,12 +1017,19 @@ async function syncData() {
     if (json.error) {
       throw new Error(json.error);
     }
-    DATA = (json.rows || []).filter(r => r.name && !String(r.name).includes('TEST'));
+    const RAW = (json.rows || []).filter(r => r.name && !String(r.name).includes('TEST'));
+    // 같은 이름은 시트에서 가장 아래(최신) 행 1건만 사용 — 설문 폼 서버(findRow_)와 같은 규칙
+    DUP_COUNT = {};
+    RAW.forEach(r => { const k = String(r.name).trim(); DUP_COUNT[k] = (DUP_COUNT[k]||0) + 1; });
+    const latest = new Map();
+    RAW.forEach(r => latest.set(String(r.name).trim(), r));
+    DATA = [...latest.values()];
+    RAW_COUNT = RAW.length;
     SERVER_TOTALS = json.totals || null;
     resolveTotals();
     updateCohortLabels();
     sessionStorage.setItem('dash_pw', SESSION_PW);
-    setSyncStatus('live', `연결됨 · ${DATA.length}건`);
+    setSyncStatus('live', RAW_COUNT !== DATA.length ? `연결됨 · ${RAW_COUNT}건 (중복 제외 ${DATA.length}명)` : `연결됨 · ${DATA.length}건`);
     document.getElementById('hdr-resp-cnt').textContent = `유효 응답 ${DATA.length}명`;
     document.getElementById('hdr-last-sync').textContent =
       '마지막 동기화 ' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
@@ -1363,26 +1372,25 @@ function renderResp() {
   }).join('');
 
   // 단계별 응답자 명단 (잘못 응답한 사람 확인용)
-  const nameCnt = {};
-  DATA.forEach(r => { nameCnt[r.name] = (nameCnt[r.name]||0) + 1; });
+  const nameCnt = DUP_COUNT;
   const known = new Set(STAGE_COLS);
   const groups = STAGE_COLS.map(s => [s, DATA.filter(r => r.stage === s)]);
   const others = DATA.filter(r => !known.has(r.stage));
   if (others.length) groups.push(['단계 미확인', others]);
   const chip = r => {
     const sub = [r.group, r.role].filter(Boolean).map(esc).join(' · ');
-    const dup = nameCnt[r.name] > 1;
-    return `<span class="rn-chip${dup?' dup':''}" title="${dup?'같은 이름으로 '+nameCnt[r.name]+'건 응답':''}">${esc(r.name)}${sub?`<small>${sub}</small>`:''}</span>`;
+    const n = nameCnt[String(r.name).trim()] || 1, dup = n > 1;
+    return `<span class="rn-chip${dup?' dup':''}" title="${dup?'같은 이름으로 '+n+'건 응답 — 최신 1건만 반영':''}">${esc(r.name)}<small>${sub}${dup?(sub?' · ':'')+n+'건 중 최신':''}</small></span>`;
   };
   const namesBox = document.getElementById('resp-names');
   namesBox.querySelectorAll('details.rn-grp').forEach(d => { d.open ? RN_OPEN.add(d.dataset.s) : RN_OPEN.delete(d.dataset.s); });
   namesBox.innerHTML = groups.map(([s, rows]) => {
     const tot = STAGE_TOTAL[s];
-    const head = tot !== undefined ? `${rows.length}건 / 총원 ${tot}명` : `${rows.length}건`;
+    const head = tot !== undefined ? `${rows.length}명 / 총원 ${tot}명` : `${rows.length}명`;
     const label = known.has(s) ? badge(s) : `<span class="pill p-0">${esc(s)}</span>`;
     return `<details class="rn-grp" data-s="${esc(s)}"${RN_OPEN.has(s)?' open':''}><summary class="rn-head">${label}<span>${head}</span></summary>` +
       (rows.length ? `<div class="rn-list">${rows.map(chip).join('')}</div>` : `<div class="rn-empty">응답자 없음</div>`) + `</details>`;
-  }).join('') + (Object.values(nameCnt).some(n=>n>1) ? '<div class="rn-empty" style="margin-top:8px">빨간색 표시는 같은 이름으로 2건 이상 응답한 경우입니다.</div>' : '');
+  }).join('') + (Object.values(nameCnt).some(n=>n>1) ? '<div class="rn-empty" style="margin-top:8px">빨간색 표시는 시트에 같은 이름으로 2건 이상 있는 경우이며, 최신 1건만 집계에 반영됩니다.</div>' : '');
 
   // charts
   const rates = STAGE_COLS.map(s=>{ const n=stageCounts[s],t=STAGE_TOTAL[s]; return t?+(n/t*100).toFixed(1):0; });
@@ -1707,6 +1715,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.3 (2026-11-27)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.4 (2026-11-27)</div>
 </body>
 </html>
