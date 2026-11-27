@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v3.0 (2026-11-27)">
+<meta name="app-version" content="v3.1 (2026-11-27)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발·수지주일반 사역평가표 대시보드</title>
@@ -123,6 +123,11 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color:
 /* 단계별 응답자 명단 */
 .rn-grp { padding: 10px 0; border-bottom: 1px solid var(--border2); }
 .rn-grp:last-child { border-bottom: none; }
+.rn-grp > summary.rn-head { list-style: none; cursor: pointer; margin-bottom: 0; user-select: none; }
+.rn-grp > summary.rn-head::-webkit-details-marker { display: none; }
+.rn-grp > summary.rn-head::after { content: '▾'; margin-left: auto; transition: transform .15s; color: var(--muted); }
+.rn-grp[open] > summary.rn-head::after { transform: rotate(180deg); }
+.rn-grp[open] > summary.rn-head { margin-bottom: 8px; }
 .rn-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: .78rem; color: var(--muted); }
 .rn-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .rn-chip { display: inline-flex; flex-direction: column; background: #F7F5F0; border: 1px solid var(--border2); border-radius: 8px; padding: 5px 9px; font-size: .82rem; font-weight: 600; color: var(--navy); line-height: 1.25; }
@@ -913,6 +918,7 @@ const TRAIN_QS   = [{k:'train_1',l:'전도자 무장'},{k:'train_2',l:'팀원 �
 const TRAINER_QS = [{k:'trainer_1',l:'복음제시 도움'},{k:'trainer_2',l:'무장 도움'}];
 
 let DATA    = [];
+const RN_OPEN = new Set();   // 응답자 명단 펼친 단계 (기본: 모두 접힘)
 let charts  = {};
 let SESSION_PW = '';   // 로그인 후 세션에 저장
 let CUR_COHORT = sessionStorage.getItem('dash_cohort') || '62기';   // 기본 62기
@@ -1371,12 +1377,14 @@ function renderResp() {
     const dup = nameCnt[r.name] > 1;
     return `<span class="rn-chip${dup?' dup':''}" title="${dup?'같은 이름으로 '+nameCnt[r.name]+'건 응답':''}">${esc(r.name)}${sub?`<small>${sub}</small>`:''}</span>`;
   };
-  document.getElementById('resp-names').innerHTML = groups.map(([s, rows]) => {
+  const namesBox = document.getElementById('resp-names');
+  namesBox.querySelectorAll('details.rn-grp').forEach(d => { d.open ? RN_OPEN.add(d.dataset.s) : RN_OPEN.delete(d.dataset.s); });
+  namesBox.innerHTML = groups.map(([s, rows]) => {
     const tot = STAGE_TOTAL[s];
     const head = tot !== undefined ? `${rows.length}건 / 총원 ${tot}명` : `${rows.length}건`;
     const label = known.has(s) ? badge(s) : `<span class="pill p-0">${esc(s)}</span>`;
-    return `<div class="rn-grp"><div class="rn-head">${label}<span>${head}</span></div>` +
-      (rows.length ? `<div class="rn-list">${rows.map(chip).join('')}</div>` : `<div class="rn-empty">응답자 없음</div>`) + `</div>`;
+    return `<details class="rn-grp" data-s="${esc(s)}"${RN_OPEN.has(s)?' open':''}><summary class="rn-head">${label}<span>${head}</span></summary>` +
+      (rows.length ? `<div class="rn-list">${rows.map(chip).join('')}</div>` : `<div class="rn-empty">응답자 없음</div>`) + `</details>`;
   }).join('') + (Object.values(nameCnt).some(n=>n>1) ? '<div class="rn-empty" style="margin-top:8px">빨간색 표시는 같은 이름으로 2건 이상 응답한 경우입니다.</div>' : '');
 
   // charts
@@ -1727,6 +1735,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.0 (2026-11-27)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.1 (2026-11-27)</div>
 </body>
 </html>
