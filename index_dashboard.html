@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="app-version" content="v3.2 (2026-11-27)">
+<meta name="app-version" content="v3.3 (2026-11-27)">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>전도폭발 사역평가 결과</title>
@@ -1226,14 +1226,11 @@ function renderIssueDyn(stage) {
   const scoreHtml = scored.length
     ? `<div class="card">${scored.slice(0, 5).map(x => scoreBar(x.l, x.a, '#B94A3A')).join('')}</div>`
     : '<div class="empty-state">평점 응답 없음</div>';
-  const qs = (keys, rows) => quoteList(rows || D, keys);
   box.innerHTML = `
     <div class="al al-n" style="margin-bottom:1rem">${CUR_COHORT} <strong>${label}</strong> 응답 ${D.length}건을 기준으로 자동 생성된 점검 결과입니다. 응답이 적을 때는 참고용으로만 보세요.</div>
     <div class="sec-ttl">🔴 점검 필요 항목</div>${itemHtml}
     <div class="sec-ttl">평점이 낮은 항목 (하위 5)</div>${scoreHtml}
-    <div class="sec-ttl">제안 사항</div><div class="card">${qs(['suggest_1','suggest_2','suggest_3'])}</div>
-    <div class="sec-ttl">어려운 경험 &amp; 하나님의 지혜</div><div class="card">${qs(['field_5b'])}</div>
-    <div class="sec-ttl">결석 이유</div><div class="card">${qs(['absent_reason'], D.filter(r => r.absent_reason))}</div>`;
+    <div class="al al-n" style="margin-top:1rem">제안 사항 · 어려운 경험 · 결석 이유 등 주관식 의견 원문은 <strong>💬 주관식</strong> 탭에서 단계별로 볼 수 있습니다.</div>`;
 }
 
 /* ═══════════════════════════════════════════════
@@ -1452,29 +1449,6 @@ function renderStage() {
       return a!==null ? scoreBar(q.l, a, isAll ? '#1B2E4B' : STAGE_CLR[ci]) : '';
     }).join('');
 
-    // quotes — 제안사항은 의견자 이름·단계 태그 포함
-    const qt5a = (rows.map(r=>(r.field_5a||'').trim()).filter(Boolean)[0])||'';
-    const qt5b = (rows.map(r=>(r.field_5b||'').trim()).filter(Boolean)[0])||'';
-
-    // 제안사항 — 의견자 이름·단계·조·역할 태그 포함
-    const suggestHtml = rows.flatMap(r => {
-      const items = [r.suggest_1, r.suggest_2, r.suggest_3].filter(v => (v||'').trim());
-      return items.map(v => {
-        const si = STAGE_COLS.indexOf(r.stage) + 1;
-        const stageCls = `rt-s${Math.min(si,5)}`;
-        const tag = `<div class="resp-tags-row" style="margin-top:5px">
-          <span class="resp-tag">
-            <span class="rt-avatar">${(r.name||'?')[0]}</span>
-            ${esc(r.name||'?')}
-            <span class="rt-stage ${stageCls}">${esc(r.stage||'?')}</span>
-            ${r.group ? esc(r.group)+' ·' : ''} ${esc(r.role||'')}
-          </span>
-        </div>`;
-        return `<div class="qt">${esc(v)}${tag}</div>`;
-      });
-    }).join('');
-    const suggest = suggestHtml;
-
     let warning = '';
     if(rows.length===0) warning = `<div class="al al-r" style="margin-bottom:10px"><strong>응답 없음.</strong> 이 단계의 데이터가 수집되지 않았습니다. 개별 연락을 통해 응답을 요청하세요.</div>`;
     else if(rows.length<=1) warning = `<div class="al al-r" style="margin-bottom:10px">응답자 ${rows.length}명으로 대표성이 매우 제한적입니다. 추가 수거 후 해석을 권장합니다.</div>`;
@@ -1491,9 +1465,7 @@ function renderStage() {
       ${warning}
       <div class="kpis">${kpis.map(([l,v])=>`<div class="kpi"><div class="kpi-v">${v}</div><div class="kpi-l">${l}</div></div>`).join('')}</div>
       ${rows.length>0?`<div class="sec-ttl">평점 (10점 척도)</div><div class="card">${barHtml}</div>`:''}
-      ${qt5a?`<div class="sec-ttl">유익한 경험 (대표)</div><div class="card"><div class="qt">${esc(qt5a)}</div></div>`:''}
-      ${qt5b?`<div class="sec-ttl">어려운 경험 (대표)</div><div class="card"><div class="qt">${esc(qt5b)}</div></div>`:''}
-      ${suggest?`<div class="sec-ttl">제안 사항</div><div class="card">${suggest}</div>`:''}
+      ${rows.length>0?`<div class="al al-n" style="margin-top:10px">유익한 경험·어려운 경험·제안 사항 등 주관식 의견은 <strong>💬 주관식</strong> 탭에서 볼 수 있습니다.</div>`:''}
     `;
     panels.appendChild(div);
   });
@@ -1735,6 +1707,6 @@ window.addEventListener('DOMContentLoaded', () => {
   checkLogin();
 });
 </script>
-<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.2 (2026-11-27)</div>
+<div id="app-version" style="position:fixed;right:6px;bottom:4px;font-size:10px;color:#999;opacity:.7;pointer-events:none;z-index:9999">v3.3 (2026-11-27)</div>
 </body>
 </html>
